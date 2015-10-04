@@ -3,6 +3,7 @@ package masonwan.playground;
 import com.google.common.collect.Lists;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.ExtensionMethod;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.UtilityClass;
 import org.testng.annotations.Test;
@@ -19,6 +20,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+@ExtensionMethod({
+    String.class, Extensions.class
+})
 public class PlayLombok {
     @Test
     public void testVal_setValue() throws Exception {
@@ -156,6 +160,24 @@ public class PlayLombok {
     public void testUtilityClass() throws Exception {
         // The IDE might show error because it does not support Lombok syntax yet.
         Utility.print("Hi");
+    }
+
+    @Test
+    public void testExtensionMethod() throws Exception {
+        // The IDE might show error because it does not support Lombok syntax yet.
+        assertThat("hi".toTitleCase()).isEqualTo("Hi");
+    }
+}
+
+class Extensions {
+    public static <T> T or(T obj, T ifNull) {
+        return obj != null ? obj : ifNull;
+    }
+
+    public static String toTitleCase(String in) {
+        if (in.isEmpty()) return in;
+        return "" + Character.toTitleCase(in.charAt(0)) +
+            in.substring(1).toLowerCase();
     }
 }
 
