@@ -17,4 +17,14 @@ public class PlayJackson {
 
         assertThat(value).isEqualTo(123);
     }
+    @Test
+    public void testTree_findPath() throws Exception {
+        String json = "{\"x\":{\"y\":{\"z\":123}}}";
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        JsonNode jsonNode = objectMapper.readTree(json);
+        int value = jsonNode.findPath("should not find me").asInt(321);
+
+        assertThat(value).isEqualTo(321);
+    }
 }
