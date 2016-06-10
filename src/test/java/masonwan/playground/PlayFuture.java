@@ -2,19 +2,23 @@ package masonwan.playground;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.assertj.core.api.Fail;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
-import static org.assertj.core.api.Assertions.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Log4j2
 public class PlayFuture {
@@ -213,4 +217,131 @@ public class PlayFuture {
             return id;
         };
     }
+
+    //region anyOf
+    @Test
+    public void test_anyOf_bothFulfillFalse() throws Exception {
+        Boolean isOkay = isAnyOkay(
+            getPromise(false),
+            getPromise(false)
+        )
+            .get(1, TimeUnit.SECONDS);
+
+        assertThat(isOkay)
+            .isFalse();
+    }
+
+    @Test
+    public void test_anyOf_bothFulfillTrue() throws Exception {
+        boolean isOkay = isAnyOkay(
+            getPromise(true),
+            getPromise(true)
+        )
+            .get(1, TimeUnit.SECONDS);
+
+        assertThat(isOkay)
+            .isTrue();
+    }
+
+    @Test
+    public void test_anyOf_oneFulfillsTrue() throws Exception {
+        boolean isOkay = isAnyOkay(
+            getPromise(false),
+            getPromise(true)
+        )
+            .get(1, TimeUnit.SECONDS);
+
+        assertThat(isOkay)
+            .isTrue();
+    }
+
+    @Test
+    public void test_anyOf_oneFails() throws Exception {
+        boolean isOkay = isAnyOkay(
+            getFailedPromise(0),
+            getPromise(true)
+        )
+            .get(1, TimeUnit.SECONDS);
+
+        assertThat(isOkay)
+            .isTrue();
+    }
+
+    @Test
+    public void test_anyOf_twoFail() throws Exception {
+        boolean isOkay = isAnyOkay(
+            getFailedPromise(0),
+            getFailedPromise(1)
+        )
+            .get(1, TimeUnit.SECONDS);
+
+        assertThat(isOkay)
+            .isFalse();
+    }
+
+    @Test
+    public void test_anyOf_oneTrueOneFalseOneFails() throws Exception {
+        boolean isOkay = isAnyOkay(
+            getFailedPromise(0),
+            getFailedPromise(1),
+            getFailedPromise(2),
+            getFailedPromise(3),
+            getPromise(false),
+            getFailedPromise(4),
+            getPromise(true)
+        )
+            .get(1, TimeUnit.SECONDS);
+
+        assertThat(isOkay)
+            .isTrue();
+    }
+
+    @SuppressWarnings("unchecked")
+    private CompletableFuture<Boolean> isAnyOkay(CompletableFuture<Boolean>... promiseArray) {
+        List<CompletableFuture<Boolean>> promises = Arrays.asList(promiseArray);
+
+        CompletableFuture<Boolean> responsePromise = new CompletableFuture<>();
+
+        AtomicInteger completedPromiseCount = new AtomicInteger(0);
+        promises.forEach((promise) -> {
+            promise
+                .thenAccept((isOkay) -> {
+                    completedPromiseCount.incrementAndGet();
+
+                    if (isOkay) {
+                        responsePromise.complete(true);
+                        return;
+                    }
+
+                    if (completedPromiseCount.intValue() >= promises.size()) {
+                        responsePromise.complete(false);
+                    }
+                })
+                .exceptionally((throwable) -> {
+                    completedPromiseCount.incrementAndGet();
+
+                    if (completedPromiseCount.intValue() >= promises.size()) {
+                        responsePromise.complete(false);
+                    }
+
+                    return null;
+                });
+        });
+
+        return responsePromise;
+    }
+
+    private CompletableFuture<Boolean> getPromise(boolean result) {
+        return CompletableFuture.supplyAsync(() -> {
+            return result;
+        });
+    }
+
+    private CompletableFuture<Boolean> getFailedPromise(int id) {
+        return CompletableFuture.supplyAsync(() -> {
+            log.debug("{} is failing", id);
+            throw new RuntimeException("" + id);
+        });
+    }
+    //endregion
 }
