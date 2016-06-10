@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 public class PlayLog4j2 {
     @Test
     public void test_setRootLogLevel() throws Exception {
-        Configurator.setRootLevel(Level.DEBUG);
+        Configurator.setRootLevel(Level.INFO);
 
         log.debug("Debug");
         log.info("Info");

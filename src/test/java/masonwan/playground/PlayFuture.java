@@ -171,7 +171,7 @@ public class PlayFuture {
     }
 
     @Test
-    public void testFutureList_oneFails() throws Exception {
+    public void test_futureList_oneFails() throws Exception {
         ArrayList<CompletableFuture<Integer>> futures = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             CompletableFuture<Integer> future = CompletableFuture.supplyAsync(getSupplier(i));
