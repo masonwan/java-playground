@@ -14,11 +14,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 @Log4j2
 public class PlayFuture {
@@ -45,6 +47,17 @@ public class PlayFuture {
 
         assertThat(future.get())
             .isEqualTo(123);
+    }
+
+    @Test
+    public void test_timeout() throws Exception {
+        CompletableFuture<Integer> promise = new CompletableFuture<>();
+        Throwable throwable = catchThrowable(() -> {
+            promise.get(100, TimeUnit.MILLISECONDS);
+        });
+
+        assertThat(throwable)
+            .isInstanceOf(TimeoutException.class);
     }
 
     @Test
